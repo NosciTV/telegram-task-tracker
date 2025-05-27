@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
@@ -26,7 +25,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     user_id TEXT NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
-    status TEXT DEFAULT 'в работе',
+    status TEXT DEFAULT 'РІ СЂР°Р±РѕС‚Рµ',
     deadline TEXT
 )
 ''')
@@ -38,7 +37,7 @@ class Task(BaseModel):
     user_id: str
     title: str
     description: Optional[str] = ""
-    status: Optional[str] = "в работе"
+    status: Optional[str] = "РІ СЂР°Р±РѕС‚Рµ"
     deadline: Optional[str] = ""
 
 @app.get("/tasks/{user_id}", response_model=List[Task])
