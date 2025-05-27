@@ -107,29 +107,45 @@
           list.appendChild(row);
         });
     }
+    
+async function saveTask() {
+  const title       = document.getElementById("title").value;
+  const description = document.getElementById("description").value;
+  const status      = document.getElementById("status").value;
+  const deadline    = document.getElementById("deadline").value;
+  const taskId      = document.getElementById("editId").value;
+  const payload     = { user_id: userId, title, description, status, deadline };
 
-    async function saveTask() {
-      const title       = document.getElementById("title").value;
-      const description = document.getElementById("description").value;
-      const status      = document.getElementById("status").value;
-      const deadline    = document.getElementById("deadline").value;
-      const taskId      = document.getElementById("editId").value;
-      const payload     = { user_id: userId, title, description, status, deadline };
+  let res;
+  if (taskId) {
+    res = await fetch(`${API}/tasks/${taskId}`, {
+      method: "PUT",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+  } else {
+    res = await fetch(`${API}/tasks`, {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+  }
 
-      let res;
-      if (taskId) {
-        res = await fetch(`${API}/tasks/${taskId}`, {
-          method: "PUT",
-          headers: { "Content-Type":"application/json" },
-          body: JSON.stringify(payload)
-        });
-      } else {
-        res = await fetch(`${API}/tasks`, {
-          method: "POST",
-          headers: { "Content-Type":"application/json" },
-          body: JSON.stringify(payload)
-        });
-      }
+  // Считываем тело ошибки
+  const text = await res.text();
+  console.log("saveTask response:", res.status, text);
+
+  if (!res.ok) {
+    alert(`Ошибка при сохранении: ${res.status}\n\n${text}`);
+    return;
+  }
+
+  // если OK — скрываем форму и обновляем список
+  toggleForm();
+  loadTasks();
+}
+</script>
+
 
       if (!res.ok) {
         alert("Не удалось сохранить задачу: " + res.status);
