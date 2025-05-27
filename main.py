@@ -62,3 +62,13 @@ def update_task(task_id: int, task: Task):
     conn.close()
     task.id = task_id
     return task
+    from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+import os
+
+app.mount("/static", StaticFiles(directory="."), name="static")
+
+@app.get("/", response_class=FileResponse)
+def root():
+    return FileResponse("index.html")
+
