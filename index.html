@@ -102,30 +102,50 @@
       if (task) toggleForm(task);
     }
 
-    async function saveTask() {
-      const title       = document.getElementById("title").value;
-      const description = document.getElementById("description").value;
-      const status      = document.getElementById("status").value;
-      const deadline    = document.getElementById("deadline").value;
-      const taskId      = document.getElementById("editId").value;
+    async function saveTask() <script>
+  // … код выше остаётся без изменений …
 
-      console.log("saveTask() ->", { user_id: userId, title, description, status, deadline, taskId });
+  async function saveTask() {
+    const title       = document.getElementById("title").value;
+    const description = document.getElementById("description").value;
+    const status      = document.getElementById("status").value;
+    const deadline    = document.getElementById("deadline").value;
+    const taskId      = document.getElementById("editId").value;
+    const taskData    = { user_id: userId, title, description, status, deadline };
 
-      const taskData = { user_id: userId, title, description, status, deadline };
+    // отправляем запрос
+    let res;
+    if (taskId) {
+      res = await fetch(`${API}/tasks/${taskId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(taskData)
+      });
+    } else {
+      res = await fetch(`${API}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(taskData)
+      });
+    }
 
-      if (taskId) {
-        await fetch(`${API}/tasks/${taskId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(taskData)
-        });
-      } else {
-        await fetch(`${API}/tasks`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(taskData)
-        });
-      }
+    // выводим статус в консоль
+    console.log("saveTask response:", res.status, await res.text());
+
+    // показываем всплывающее сообщение
+    if (res.ok) {
+      alert("Задача сохранена успешно!");
+    } else {
+      alert("Ошибка при сохранении задачи: " + res.status);
+      return;  // если ошибка — не сбрасываем форму и не перезагружаем список
+    }
+
+    // если OK — скрываем форму и обновляем список
+    document.getElementById("taskForm").style.display = "none";
+    document.getElementById("editId").value = "";
+    loadTasks();
+  }
+
 
       document.getElementById("taskForm").style.display = "none";
       document.getElementById("editId").value = "";
