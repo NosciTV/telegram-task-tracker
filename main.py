@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     user_id TEXT NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
-    status TEXT DEFAULT 'РІ СЂР°Р±РѕС‚Рµ',
+    status TEXT DEFAULT 'в работе',
     deadline TEXT
 )
 ''')
@@ -37,7 +37,7 @@ class Task(BaseModel):
     user_id: str
     title: str
     description: Optional[str] = ""
-    status: Optional[str] = "РІ СЂР°Р±РѕС‚Рµ"
+    status: Optional[str] = "в работе"
     deadline: Optional[str] = ""
 
 @app.get("/tasks/{user_id}", response_model=List[Task])
@@ -71,7 +71,7 @@ def update_task(task_id: int, task: Task):
     task.id = task_id
     return task
 
-# Serve static index.html for Telegram WebApp
+# Serve index.html when opening root URL
 app.mount("/static", StaticFiles(directory="."), name="static")
 
 @app.get("/", response_class=FileResponse)
