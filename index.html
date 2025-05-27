@@ -9,15 +9,18 @@
   <style>
     body { background: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
     .task-row { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .add-btn { position: fixed; top: 20px; right: 20px; z-index: 10; }
     #taskForm { display: none; }
   </style>
 </head>
 <body>
   <div class="container py-4">
-    <h4 class="mb-3">Мои задачи</h4>
-    <button class="btn btn-success add-btn" onclick="toggleForm()">＋</button>
+    <!-- Заголовок и кнопка добавления в одну строку -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h4 class="m-0">Мои задачи</h4>
+      <button class="btn btn-success" onclick="toggleForm()">＋</button>
+    </div>
 
+    <!-- Фильтр -->
     <div class="mb-3">
       <label for="filter" class="form-label">Фильтр по статусу:</label>
       <select id="filter" class="form-select" onchange="loadTasks()">
@@ -28,19 +31,21 @@
       </select>
     </div>
 
+    <!-- Форма добавления/редактирования -->
     <div id="taskForm" class="mb-4">
-      <input id="title" class="form-control" placeholder="Название задачи">
-      <textarea id="description" class="form-control" placeholder="Описание"></textarea>
-      <select id="status" class="form-select">
+      <input id="title" class="form-control mb-2" placeholder="Название задачи">
+      <textarea id="description" class="form-control mb-2" placeholder="Описание"></textarea>
+      <select id="status" class="form-select mb-2">
         <option value="в работе">В работе</option>
         <option value="готово">Готово</option>
         <option value="холд">Холд</option>
       </select>
-      <input id="deadline" class="form-control" type="date">
+      <input id="deadline" class="form-control mb-2" type="date">
       <input id="editId" type="hidden">
-      <button class="btn btn-primary w-100 mt-2" onclick="saveTask()">Сохранить</button>
+      <button class="btn btn-primary w-100" onclick="saveTask()">Сохранить</button>
     </div>
 
+    <!-- Список задач -->
     <div id="taskList"></div>
   </div>
 
@@ -48,12 +53,9 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // Попытка получить user_id, если не удалось — запрашиваем ручной ввод
     let userId = tg.initDataUnsafe?.user?.id;
-    console.log("Telegram user_id:", userId);
     if (!userId) {
-      userId = prompt("Не удалось определить Telegram user_id.\nВведите ваш user_id вручную для теста:");
-      console.log("Введён user_id:", userId);
+      userId = prompt("Введите ваш user_id вручную:");
     }
 
     const API = "https://task-tracker-backend-40ra.onrender.com";
@@ -61,23 +63,29 @@
 
     function toggleForm(task = null) {
       const form = document.getElementById("taskForm");
-      form.style.display = "block";
-      document.getElementById("title").value       = task ? task.title : "";
-      document.getElementById("description").value = task ? task.description : "";
-      document.getElementById("status").value      = task ? task.status : "в работе";
-      document.getElementById("deadline").value    = task ? task.deadline : "";
-      document.getElementById("editId").value      = task ? task.id : "";
+      form.style.display = form.style.display === "block" ? "none" : "block";
+      if (task) {
+        document.getElementById("title").value       = task.title;
+        document.getElementById("description").value = task.description;
+        document.getElementById("status").value      = task.status;
+        document.getElementById("deadline").value    = task.deadline;
+        document.getElementById("editId").value      = task.id;
+      } else {
+        document.getElementById("title").value = "";
+        document.getElementById("description").value = "";
+        document.getElementById("status").value = "в работе";
+        document.getElementById("deadline").value = "";
+        document.getElementById("editId").value = "";
+      }
     }
 
     async function loadTasks() {
-      console.log("loadTasks() -> userId =", userId);
       const filter = document.getElementById("filter").value;
       const res = await fetch(`${API}/tasks/${userId}`);
       const data = await res.json();
-      console.log("Получено задач:", data);
       currentTasks = data;
-      const taskList = document.getElementById("taskList");
-      taskList.innerHTML = "";
+      const list = document.getElementById("taskList");
+      list.innerHTML = "";
 
       data
         .filter(t => filter === "все" || t.status === filter)
@@ -89,76 +97,54 @@
             <div class="col-3">${task.status}</div>
             <div class="col-3">${task.deadline || "-"}</div>
             <div class="col-3 text-end">
-              <button class="btn btn-sm btn-outline-primary me-2" onclick="editTask(${task.id})">✏️</button>
+              <button class="btn btn-sm btn-outline-primary me-2" onclick="toggleForm(currentTasks.find(x=>x.id===${task.id}))">✏️</button>
               <button class="btn btn-sm btn-outline-danger" onclick="deleteTask(${task.id})">🗑</button>
             </div>
           `;
-          taskList.appendChild(row);
+          list.appendChild(row);
         });
     }
 
-    function editTask(id) {
-      const task = currentTasks.find(t => t.id === id);
-      if (task) toggleForm(task);
-    }
+    async function saveTask() {
+      const title       = document.getElementById("title").value;
+      const description = document.getElementById("description").value;
+      const status      = document.getElementById("status").value;
+      const deadline    = document.getElementById("deadline").value;
+      const taskId      = document.getElementById("editId").value;
+      const payload     = { user_id: userId, title, description, status, deadline };
 
-    async function saveTask() <script>
-  // … код выше остаётся без изменений …
+      let res;
+      if (taskId) {
+        res = await fetch(`${API}/tasks/${taskId}`, {
+          method: "PUT",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        res = await fetch(`${API}/tasks`, {
+          method: "POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify(payload)
+        });
+      }
 
-  async function saveTask() {
-    const title       = document.getElementById("title").value;
-    const description = document.getElementById("description").value;
-    const status      = document.getElementById("status").value;
-    const deadline    = document.getElementById("deadline").value;
-    const taskId      = document.getElementById("editId").value;
-    const taskData    = { user_id: userId, title, description, status, deadline };
-
-    // отправляем запрос
-    let res;
-    if (taskId) {
-      res = await fetch(`${API}/tasks/${taskId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(taskData)
-      });
-    } else {
-      res = await fetch(`${API}/tasks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(taskData)
-      });
-    }
-
-    // выводим статус в консоль
-    console.log("saveTask response:", res.status, await res.text());
-
-    // показываем всплывающее сообщение
-    if (res.ok) {
-      alert("Задача сохранена успешно!");
-    } else {
-      alert("Ошибка при сохранении задачи: " + res.status);
-      return;  // если ошибка — не сбрасываем форму и не перезагружаем список
-    }
-
-    // если OK — скрываем форму и обновляем список
-    document.getElementById("taskForm").style.display = "none";
-    document.getElementById("editId").value = "";
-    loadTasks();
-  }
-
-
-      document.getElementById("taskForm").style.display = "none";
-      document.getElementById("editId").value = "";
-      loadTasks();
+      if (!res.ok) {
+        alert("Не удалось сохранить задачу: " + res.status);
+        return;
+      }
+      toggleForm();      // скрыть форму
+      loadTasks();       // обновить таблицу
     }
 
     async function deleteTask(id) {
-      console.log("deleteTask() id =", id, "userId =", userId);
-      await fetch(`${API}/tasks/${id}?user_id=${userId}`, { method: "DELETE" });
-      loadTasks();
+      const res = await fetch(`${API}/tasks/${id}?user_id=${userId}`, { method:"DELETE" });
+      if (res.ok) loadTasks();
+      else alert("Ошибка удаления: " + res.status);
     }
 
+    // при старте сразу грузим список
     loadTasks();
   </script>
 </body>
 </html>
+
